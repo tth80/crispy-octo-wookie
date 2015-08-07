@@ -21,69 +21,50 @@ angular.module('SchedApp.controllers', [])
             {id:4, name:'Bartholomew',    preferred:[2,3,5,6],          req_per_week:4},
             {id:5, name:'Johnson',        preferred:[1,2,3,4,5,6,7],    req_per_week:5}
         ];
-        $scope.days = [];
+
         $scope.constraints = {
             1: {must_away: ['2015-09-01', '2015-09-02'], must_work: []},
+            3: {must_away: [], must_work: ['2015-09-01']},
         };
 
-        $scope.createWeek = function(sunday) {
-            $scope.days = [];
+        $scope.createWeek = function(sunday, template) {
+            var container = {days:[], details:[]};
+
+            container.days = [];
             for(var i=0;i<7;i++) {
-                $scope.days.push(new Date(sunday.getTime() + i * 86400000));
+                var add = i * 86400000;
+                var iso = new Date(sunday.getTime() + add).toISOString().substr(0, 10);
+                container.days.push(iso); // ordered index of days
+                container.details[iso] = {};
+
+                $scope.employees.forEach(function(emp, idx) {
+                    var cs = $scope.constraints[emp.id] || {must_away:[], must_work:[]};
+                    var must_away = cs.must_away.indexOf(iso) > -1;
+                    var must_work = cs.must_work.indexOf(iso) > -1;
+
+                    var day_locked = must_away || must_work;
+                    var day_status = must_work ? '10AM-8PM' : '-';
+                    var day_preferred = emp.preferred.indexOf(i) > -1;
+
+                    container.details[iso][emp.id] = {
+                        status: day_status,
+                        locked: day_locked,
+                        preferred: day_preferred,
+                    };
+                });
             }
+
+            return container;
         };
 
-        $scope.createMonth = function(year, month) {
-            var fd = new Date(year, month-1);
-            console.log(year, month, 1);
-            while(fd.getDay() != 0) fd = new Date(fd.setSeconds(fd.getSeconds()-86400));
+        $scope.month = [
+            $scope.createWeek(new Date('2015-08-30T00:00:00+0000')),
+            $scope.createWeek(new Date('2015-09-06T00:00:00+0000')),
+            $scope.createWeek(new Date('2015-09-13T00:00:00+0000')),
+            $scope.createWeek(new Date('2015-09-20T00:00:00+0000')),
+            $scope.createWeek(new Date('2015-09-27T00:00:00+0000')),
+        ];
 
-            $scope.date_first = new Date(fd.getTime());
-            console.log('First day: ', $scope.date_first);
-
-            $scope.days = [];
-            var done = false;
-            var cur = new Date(fd.getTime());
-            while(!done) {
-                var nd = new Date(cur.getTime());
-
-                $scope.days.push(nd);
-
-                done = cur.getMonth() > month && cur.getDay() == 6;
-                cur = new Date(cur.setSeconds(cur.getSeconds() + 86400));
-                if(done) {
-                    $scope.date_last = new Date(nd.getTime());
-                }
-            }
-            console.log('Last day: ', $scope.date_last);
-        };
-
-        $scope.getDay = function(emp, day) {
-            var isoday = day.toISOString().substr(0, 10);
-            var c = $scope.constraints[emp.id] || {must_work:[], must_away:[]};
-            if(c && c.must_work.indexOf(isoday) != -1) {
-                return "must work";
-            }
-            if(c && c.must_away.indexOf(isoday) != -1) {
-                return "must away";
-            }
-            return "off";
-        };
-
-        $scope.fillPreferred = function() {
-            var day = $scope.date_first;
-            while(day <= $scope.date_last) {
-                day = day.setSeconds(day.getSeconds() + 86400000);
-                for(var i=0,len=$scope.employees.length;i<len;i++) {
-                }
-            }
-        }
-
-        $scope.createWeek(new Date(2015, 7, 30));
-        //$scope.createMonth(2015, 9);
-        //$scope.fillPreferred();
-
-        console.log($scope.days);
     });
 
 angular.module('SchedApp', [
