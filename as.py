@@ -1,3 +1,5 @@
+# http://gabrielgambetta.com/path2.html
+
 from __future__ import print_function
 
 class Node:
