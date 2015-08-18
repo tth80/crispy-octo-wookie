@@ -1,16 +1,20 @@
 # http://gabrielgambetta.com/path2.html
 
 from __future__ import print_function
+from math import sqrt
 
 class Node:
-    index = None
-    cost = None
+
+    x = None
+    y = None
     previous = None
     neighbours = None
-    node_cost = 0
+    cost = None
+    cost_so_far = None
 
-    def __init__(self, index, cost=None, previous=None, neighbours=None):
-        self.index = index
+    def __init__(self, x, y, cost=None, previous=None, neighbours=None):
+        self.x = x
+        self.y = y
 
         if cost is not None:
             self.cost = cost
@@ -23,22 +27,25 @@ class Node:
         else:
             self.neighbours = []
 
+        self.cost = 1
+        self.cost_so_far = 0
+
     def __repr__(self):
-        return "{}".format(self.index)
-
-    def get_cost(self):
-        if self.cost is None:
-            return 0
-        else:
-            return self.cost
+        return "{},{}".format(self.x, self.y)
 
 
-class grid:
+class Grid:
     width = 0
     height = 0
     data = None
 
     nodes = []
+
+    reachable = None
+    explored = None
+
+    start = None
+    goal = None
 
     def __init__(self, width, height, data=None):
         self.width = width
@@ -51,18 +58,16 @@ class grid:
 
     def set_data(self, data):
         self.data = data
-        self.nodes = [Node(index=n) for n in range(len(self.data))]
+        self.nodes = [Node(n%self.height, n/self.height) for n in range(len(self.data))]
 
         node_costs = {' ': 1, '#': 99, 'w': 2}
+        potential_reachable = [' ', 'w']
 
         for i, c in enumerate(self.data):
             cy = i / self.width
             cx = i % self.width
 
-            if c in ['s', 'e']:
-                c = ' '
-
-            self.nodes[i].node_cost = node_costs[c]
+            self.nodes[i].cost = node_costs[c]
 
             # ignore walls
             if c == '#':
@@ -81,7 +86,7 @@ class grid:
                 if x > self.width - 1 or y > self.height - 1:
                     continue
 
-                if self.data[y * self.width + x] == ' ':
+                if self.data[y * self.width + x] in potential_reachable:
                     self.nodes[i].neighbours.append(self.nodes[y*self.width + x])
 
 
@@ -104,31 +109,50 @@ class grid:
 
         return rep
 
-    def find_path(self):
-        def choose_node(reachable, explored):
-            lst = [n for n in reachable if n not in explored]
-            best = None
-            for node in lst:
-                if best is None or best.cost > node.cost:
-                    best = node
-            return best
+    def estimate_distance(self, a, b):
+        return abs(a.x - b.x) + abs(a.y - b.y)
 
-        start = self.nodes[self.data.index('s')]
-        goal = self.nodes[self.data.index('e')]
+    def estimate_distance_diagonal(self, a, b):
+        """same as estimate_distance() but allows for diagonal movement"""
+        return math.sqrt( (a.x - b.x)^2 + (a.y - b.y)^2 )
 
-        reachable = [start]
-        explored = []
-        previous = {}
-        cost = {}
+
+    def choose_node(self):
+        best = None
+        min_cost = 9999999999 
+
+        reachable = [n for n in self.reachable if n not in self.explored]
+        for node in reachable:
+            cost_start_to_node = node.cost_so_far
+            cost_node_to_goal = self.estimate_distance(node, self.goal)
+            total_cost = cost_start_to_node + cost_node_to_goal
+
+            if min_cost > total_cost:
+                min_cost = total_cost
+                best = node
+
+            #if best is None or best.cost > node.cost:
+            #    best = node
+        return best
+    
+    def find_path(self, startcoords, goalcoords):
+        start_x, start_y = startcoords
+        goal_x, goal_y = goalcoords
+
+        self.start = self.nodes[start_y * self.width + start_x]
+        self.goal = self.nodes[goal_y * self.width + goal_x]
+
+        self.reachable = [self.start]
+        self.explored = []
 
         iterations = 0
 
-        while reachable:
+        while self.reachable:
             # Choose some node we know how to reach
-            ne = choose_node(reachable, explored)
+            ne = self.choose_node()
 
             # If we just got to the goal node build and return the path
-            if ne == goal:
+            if ne == self.goal:
                 path = []
 
                 while ne != None:
@@ -138,26 +162,33 @@ class grid:
                 for n in path:
                     self.data[self.nodes.index(n)] = '.'
 
+                """
+                for node in self.nodes:
+                    if node.previous:
+                        print('#{}: from {}'.format(node.index, node.previous.index))
+                    else:
+                        print('#{}: (no prev)'.format(node.index))
+                """
+
                 print("Found solution in {} iterations.".format(iterations))
                 return path
 
             # Avoid repeating
-            reachable.remove(ne)
-            explored.append(ne)
+            self.reachable.remove(ne)
+            self.explored.append(ne)
 
             # Where can we go from here?
-            new_reachable = [n for n in ne.neighbours if n not in explored]
+            new_reachable = [n for n in ne.neighbours if n not in self.explored]
             for an in new_reachable:
-                if an not in reachable:
-                    reachable.append(an)
+                if an not in self.reachable:
+                    self.reachable.append(an)
 
-                new_cost = ne.get_cost() + 1
-                if an.cost is None or new_cost < an.cost:
+                if ne.cost_so_far + an.cost < an.cost_so_far or an.cost_so_far == 0:
+                    if an.previous:
+                        print('switching {} to another previous.. {} -> {}'.format(
+                            an, an.previous, ne))
                     an.previous = ne
-                    if ne.cost is None:
-                        an.cost = 1
-                    else:
-                        an.cost = ne.cost + 1
+                    an.cost_so_far = ne.cost_so_far + an.cost
 
             iterations += 1
 
@@ -166,33 +197,9 @@ class grid:
 
 
 if __name__ == '__main__':
-    g = grid(5, 5,
-        '   # '
-        's### '
-        '     '
-        '# ##e'
-        '#    ')
-
-    g.find_path()
-    print(g)
-
     """
-    g = grid(10, 10,
-        's  # ### #'
-        ' ##### # #'
-        '    #    #'
-        '  # # # ##'
-        '# #   # # '
-        '  ## ##   '
-        '###  #  # '
-        '     # ## '
-        '# #  #  ##'
-        '#    #e  #')
-
-    g.find_path()
-    print(g)
     
-    g = grid(10, 10,
+    g = Grid(10, 10,
         '          '
         '          '
         '          '
