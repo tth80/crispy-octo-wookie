@@ -64,7 +64,7 @@ class Grid:
         potential_reachable = [' ', 'w']
 
         for i, c in enumerate(self.data):
-            cy = i / self.width
+            cy = i // self.width
             cx = i % self.width
 
             self.nodes[i].cost = node_costs[c]
@@ -85,7 +85,7 @@ class Grid:
 
                 if x > self.width - 1 or y > self.height - 1:
                     continue
-
+                
                 if self.data[y * self.width + x] in potential_reachable:
                     self.nodes[i].neighbours.append(self.nodes[y*self.width + x])
 
