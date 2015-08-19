@@ -58,7 +58,7 @@ class Grid:
 
     def set_data(self, data):
         self.data = data
-        self.nodes = [Node(n%self.height, n/self.height) for n in range(len(self.data))]
+        self.nodes = [Node(n % self.height, n // self.height) for n in range(len(self.data))]
 
         node_costs = {' ': 1, '#': 99, 'w': 2}
         potential_reachable = [' ', 'w']
@@ -159,18 +159,6 @@ class Grid:
                     path.append(ne)
                     ne = ne.previous
 
-                for n in path:
-                    self.data[self.nodes.index(n)] = '.'
-
-                """
-                for node in self.nodes:
-                    if node.previous:
-                        print('#{}: from {}'.format(node.index, node.previous.index))
-                    else:
-                        print('#{}: (no prev)'.format(node.index))
-                """
-
-                print("Found solution in {} iterations.".format(iterations))
                 return path
 
             # Avoid repeating
@@ -185,8 +173,10 @@ class Grid:
 
                 if ne.cost_so_far + an.cost < an.cost_so_far or an.cost_so_far == 0:
                     if an.previous:
-                        print('switching {} to another previous.. {} -> {}'.format(
-                            an, an.previous, ne))
+                        #print('switching {} to another previous.. {} -> {}'.format(
+                        #    an, an.previous, ne))
+                        pass
+
                     an.previous = ne
                     an.cost_so_far = ne.cost_so_far + an.cost
 

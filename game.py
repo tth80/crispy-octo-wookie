@@ -29,10 +29,16 @@ class Entity:
         self.x = x
         self.y = y
 
+    def render(self):
+        print("\033[{};{}HE".format(self.x+1, self.y+1))
+        
+
 
 class EntityRoaming(Entity):
     waypoints = None
-    active_waypoint = None
+    active_waypoint = 0
+
+    grid_ref = None
 
     def __init__(self):
         super(EntityRoaming, self).__init__()
@@ -42,15 +48,50 @@ class EntityRoaming(Entity):
 
     def set_waypoints(self, waypoints):
         self.waypoints = waypoints
-        self.active_waypoint = self.waypoints[0]
+        self.active_waypoint = 0
+
+    def set_grid(self, grid):
+        self.grid_ref = grid
+
+    def __repr__(self):
+        return 'Roaming Entity: Heading towards: {} with waypoints {}'.format(
+            self.waypoints[self.active_waypoint],
+            self.waypoints)
+
+    def tick(self):
+        active_waypoint = self.waypoints[self.active_waypoint]
+        waypoint_count = len(self.waypoints)
+        
+        cur_loc = [self.x, self.y]
+        if cur_loc == active_waypoint:
+            self.active_waypoint = (self.active_waypoint + 1) % waypoint_count
+            active_waypoint = self.waypoints[self.active_waypoint]
+
+        path = self.grid_ref.find_path(cur_loc, active_waypoint)
+        self.x, self.y = path[-1].x, path[-1].y
 
 
 class Enemy(EntityRoaming):
-    pass
+    def __repr__(self):
+        return super(Enemy, self).__repr__().replace('Entity', 'Enemy')
+        
 
 class Game:
     grid = None
     entities = None
+
+    _tick = 0
+
+    def tick(self):
+        self._tick += 1
+        
+        # move all entities
+        for entity in self.entities:
+            entity.tick()
+
+        # move player
+        # calculate damage
+        # save the world
 
     def load_level(self, data):
         self.entities = []
@@ -59,24 +100,37 @@ class Game:
         width, height = [int(n) for n in rows[0].split(',')]
         mapdata = ''.join(rows[1:height+1])
 
+        # initialize map grid
+        self.grid = Grid(width, height, mapdata)
+
+        # initialize entities
         for entitydata in rows[height+1:]:
             e_type, waypoints = entitydata.split(' ', 1)
-            waypoints = [wp.split(',') for wp in waypoints.split(' ')]
+            waypoints = [list(map(int, wp.split(','))) for wp in waypoints.split(' ')]
 
             if e_type == 'E':
                 entity = Enemy()
                 entity.set_location(*waypoints[0])
                 entity.set_waypoints(waypoints)
+                entity.set_grid(self.grid)
 
                 self.entities.append(entity)
 
         # print(':{}:{}:{}:{}:{}:'.format(width, height, width*height, mapdata, len(mapdata)))
-        self.grid = Grid(width, height, mapdata)
 
-    @timing
     def render(self):
         print("\033[1;1H")
         print(self.grid)
+
+        for e in self.entities:
+            e.render()
+
+        #print("\033[{};1H".format(self.grid.height))
+        #print('Entities:')
+        #for e in self.entities:
+        #    print(e)
+
+        time.sleep(0.5)
 
 
 if __name__ == '__main__':
@@ -87,4 +141,5 @@ if __name__ == '__main__':
         game.load_level(data)
 
     for i in range(10):
+        game.tick()
         game.render()
