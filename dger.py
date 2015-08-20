@@ -30,8 +30,12 @@ class Entity:
         self.y = y
 
     def render(self):
-        print("\033[{};{}HE".format(self.x+1, self.y+1))
+        # print("\033[{};{}H".format(self.x+1, self.y+1))
+        print(self.x, self.y, end=' ')
+        print("E")
         
+    def tick(self):
+        pass
 
 
 class EntityRoaming(Entity):
@@ -54,21 +58,35 @@ class EntityRoaming(Entity):
         self.grid_ref = grid
 
     def __repr__(self):
-        return 'Roaming Entity: Heading towards: {} with waypoints {}'.format(
-            self.waypoints[self.active_waypoint],
-            self.waypoints)
+        return 'RoamingEntity({},{})'.format(self.x, self.y)
+        #return 'Roaming Entity: Heading towards: {} with waypoints {}'.format(
+        #    self.waypoints[self.active_waypoint],
+        #    self.waypoints)
 
     def tick(self):
+        # remove existing paths
+        self.grid_ref.reset()
+
         active_waypoint = self.waypoints[self.active_waypoint]
         waypoint_count = len(self.waypoints)
         
         cur_loc = [self.x, self.y]
         if cur_loc == active_waypoint:
+            #print('{} reached waypoint {}.'.format(self, active_waypoint))
+
             self.active_waypoint = (self.active_waypoint + 1) % waypoint_count
             active_waypoint = self.waypoints[self.active_waypoint]
+            #print('{} new waypoint: {}'.format(self, active_waypoint))
 
+        #print('Search: {} to {}'.format(cur_loc, active_waypoint))
         path = self.grid_ref.find_path(cur_loc, active_waypoint)
+        #print(path)
+        #oldx, oldy = self.x, self.y
         self.x, self.y = path[-1].x, path[-1].y
+        print(self.x, self.y)
+
+        #print("{} moving from {} to {}".format(self, (oldx, oldy), (self.x, self.y)))
+
 
 
 class Enemy(EntityRoaming):
@@ -120,17 +138,22 @@ class Game:
 
     def render(self):
         print("\033[1;1H")
-        print(self.grid)
 
+        grid_data = [list(line) for line in str(self.grid).split('\n')]
         for e in self.entities:
-            e.render()
+            grid_data[e.y][e.x+1] = 'E'
+
+        print('\n'.join([''.join(line) for line in grid_data]))
+
+        #for e in self.entities:
+        #    e.render()
 
         #print("\033[{};1H".format(self.grid.height))
         #print('Entities:')
         #for e in self.entities:
         #    print(e)
 
-        time.sleep(0.5)
+        time.sleep(0.01)
 
 
 if __name__ == '__main__':
@@ -140,6 +163,6 @@ if __name__ == '__main__':
         data = f.read()
         game.load_level(data)
 
-    for i in range(10):
+    for i in range(1000):
         game.tick()
         game.render()

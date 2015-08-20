@@ -56,9 +56,14 @@ class Grid:
 
         self.set_data(data)
 
+    def reset(self):
+        for node in self.nodes:
+            node.cost_so_far = 0
+            node.previous = None
+
     def set_data(self, data):
         self.data = data
-        self.nodes = [Node(n % self.height, n // self.height) for n in range(len(self.data))]
+        self.nodes = [Node(n % self.width, n // self.width) for n in range(len(self.data))]
 
         node_costs = {' ': 1, '#': 99, 'w': 2}
         potential_reachable = [' ', 'w']
@@ -155,7 +160,7 @@ class Grid:
             if ne == self.goal:
                 path = []
 
-                while ne != None:
+                while ne.previous:
                     path.append(ne)
                     ne = ne.previous
 
