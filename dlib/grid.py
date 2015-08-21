@@ -1,4 +1,4 @@
-# http://gabrielgambetta.com/path2.html
+# http://gabrielgambetta.com/path6.html
 
 from __future__ import print_function
 from math import sqrt
@@ -13,6 +13,21 @@ class Node:
     cost_so_far = None
 
     def __init__(self, x, y, cost=None, previous=None, neighbours=None):
+        enforce = [
+            [int, False, [x, y]],
+            [int, True, [cost]],
+            [Node, True, [previous]],
+            [list, True, [neighbours]]]
+
+        for e_type, e_nullable, e_params in enforce:
+            for e_param in e_params:
+                if e_nullable and e_param is None:
+                    continue
+
+                if not isinstance(e_param, e_type):
+                    raise TypeError("{} not a type {}".format(
+                        e_param, e_type))
+
         self.x = x
         self.y = y
 
@@ -31,7 +46,7 @@ class Node:
         self.cost_so_far = 0
 
     def __repr__(self):
-        return "{},{}".format(self.x, self.y)
+        return "[{},{}]".format(self.x, self.y)
 
 
 class Grid:
