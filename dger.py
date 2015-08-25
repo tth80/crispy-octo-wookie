@@ -1,4 +1,4 @@
-from grid import Grid, Node
+from dlib import Grid, Node
 import time
 from functools import wraps
 
