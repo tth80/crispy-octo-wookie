@@ -36,6 +36,24 @@ class Gen:
         
         return nx, ny
 
+    def turn(self, direction, bearing):
+        if direction == UP and bearing == LEFT:
+            return LEFT
+        elif direction == UP and bearing == RIGHT:
+            return RIGHT
+        elif direction == DOWN and bearing == RIGHT:
+            return LEFT
+        elif direction == DOWN and bearing == LEFT:
+            return RIGHT
+        elif direction == LEFT and bearing == RIGHT:
+            return UP
+        elif direction == LEFT and bearing == LEFT:
+            return DOWN
+        elif direction == RIGHT and bearing == RIGHT:
+            return DOWN
+        elif direction == RIGHT and bearing == LEFT:
+            return UP
+        return
 
     def generate(self):
         self.width = 75
@@ -56,6 +74,8 @@ class Gen:
         self.explorable.put((0, (midx-1, midy, LEFT)))
         self.explorable.put((0, (midx+1, midy, RIGHT)))
 
+        c = {0:0, 1:1, 2:2, 3:3}
+
         try:
             while True:
                 priority, (x, y, direction) = self.explorable.get(False)
@@ -64,29 +84,36 @@ class Gen:
                 try:
                     nx, ny = self.get_next(x, y, direction)
                     if self.get(nx, ny) == '.':
-                        self.explorable.put((priority + 0.1, (nx, ny, direction)))
+                        self.explorable.put((priority, (nx, ny, direction)))
 
-                    if random() >= 0.97:
-                        nd = (direction + 1) % 3 
-                        if nd < 0 or nd > 3:
-                            raise Exception('invalid direction: {}'.format(nd))
+                    TRESHOLD_DOORWAY = 0.01
+                    TRESHOLD_TUNNEL = 0.2
 
-                        nx, ny = self.get_next(nx, ny, nd)
-                        self.explorable.put((priority + 0.05, (nx, ny, nd)))
-                    
-                    if random() >= 0.97:
-                        nd = (direction + 1) % 3
-                        if nd < 0 or nd > 3:
-                            raise Exception('invalid direction: {}'.format(nd))
+                    if priority == 0:
+                        # give equal chances of branching left and right
+                        if random() >= 1 - TRESHOLD_TUNNEL:
+                            # branch right
+                            nd = self.turn(direction, RIGHT)
+                            nx, ny = self.get_next(nx, ny, nd)
+                            self.explorable.put((priority + 0.05, (nx, ny, nd)))
+                            
+                            c[nd] += 1
+                        
+                        if random() >= 1 - TRESHOLD_TUNNEL:
+                            # branch left
+                            nd = self.turn(direction, LEFT)
+                            nx, ny = self.get_next(nx, ny, nd)
+                            self.explorable.put((priority + 0.05, (nx, ny, nd)))
 
-                        nx, ny = self.get_next(nx, ny, nd)
-                        self.explorable.put((priority + 0.05, (nx, ny, nd)))
+                            c[nd] += 1
 
                 except IndexError:
                     pass
 
         except Empty:
             pass
+
+        print(c)
 
 
     def __repr__(self):
