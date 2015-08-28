@@ -80,7 +80,7 @@ class Grid:
         self.data = data
         self.nodes = [Node(n % self.width, n // self.width) for n in range(len(self.data))]
 
-        node_costs = {' ': 1, '#': 99, 'w': 2}
+        node_costs = {' ': 1, '#': 99, 'w': 2, 'S': 5, 'G': 5}
         potential_reachable = [' ', 'w']
 
         for i, c in enumerate(self.data):

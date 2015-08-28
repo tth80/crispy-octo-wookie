@@ -159,7 +159,7 @@ class Game:
 if __name__ == '__main__':
     game = Game()
 
-    with open('level1.txt') as f:
+    with open('leveltest.txt') as f:
         data = f.read()
         game.load_level(data)
 
